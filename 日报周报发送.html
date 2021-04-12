@@ -1,0 +1,84 @@
+
+
+<FORM>
+   
+    <textarea id="input" value=getFormatDailyDate()>这是幕后黑手</textarea>
+    <br/>
+   <input type=button value="复制日报" onClick="copyDay()">
+   <input type=button value="复制周报" onClick="copyWeek()">
+   
+       
+   </FORM>
+
+<SCRIPT LANGUAGE="JavaScript">
+
+
+function copyDay(){
+      var input = document.getElementById("input");
+      input.value = getFormatDailyDate(); // 修改文本框的内容
+      input.select(); // 选中文本
+      document.execCommand("copy"); // 执行浏览器复制命令
+      alert("复制成功");
+}
+
+ function getFormatDailyDate() {
+        var date = new Date();
+        var year = date.getFullYear();
+        var month = date.getMonth() + 1;
+        var strDate = date.getDate();
+        if (month >= 1 && month <= 9) {
+            month = "0" + month;
+        }
+        if (strDate >= 0 && strDate <= 9) {
+            strDate = "0" + strDate;
+        }
+        var currentdate = year + "." + month + "." + strDate;
+        return "工作日报-"+currentdate;
+    }
+	
+
+function copyWeek(){
+    var input = document.getElementById("input");
+      input.value = getFormatWeeklyDate(); // 修改文本框的内容
+      input.select(); // 选中文本
+      document.execCommand("copy"); // 执行浏览器复制命令
+      alert("复制成功");
+
+}
+
+ function getFormatWeeklyDate() {
+        var date = showWeekFirstDay();
+		var date2 = showWeekLastDay();
+        return "工作周报-"+date+"~"+date2;
+    }
+function showWeekFirstDay()     
+{     
+    var Nowdate=new Date();     
+    var WeekFirstDay=new Date(Nowdate-(Nowdate.getDay()-1)*86400000);     
+    M=Number(WeekFirstDay.getMonth())+1   
+	D = WeekFirstDay.getDate()
+	if (M >= 1 && M <= 9) {
+            M = "0" + M;
+        }
+        if (D >= 0 && D <= 9) {
+            D = "0" + D;
+        }	
+    return WeekFirstDay.getFullYear() + "." + M + "." + D;     
+}
+function showWeekLastDay()     
+{     
+    var Nowdate=new Date();     
+    var WeekFirstDay=new Date(Nowdate-(Nowdate.getDay()-1)*86400000);     
+    var WeekLastDay=new Date((WeekFirstDay/1000+4*86400)*1000);     
+    M=Number(WeekLastDay.getMonth())+1   
+	D = WeekLastDay.getDate()
+	if (M >= 1 && M <= 9) {
+            M = "0" + M;
+        }
+        if (D >= 0 && D <= 9) {
+            D = "0" + D;
+        }	    
+    return WeekLastDay.getFullYear() + "." + M + "." + D;     
+}
+// End -->
+</SCRIPT>
