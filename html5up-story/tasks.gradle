@@ -1,0 +1,105 @@
+//fir上传alpha测试包
+//task uploadFir(dependsOn: ['assembleAlpha']) {
+//    def fir_api_token = "ace96603d1c0e05c7d3925a13535772a"
+//    doLast {
+//        println "即将上传到fir..."
+//
+//        //获取fir上传凭证的各个字段
+//        def appInfo = ("curl -X POST -d type=android&" +
+//                "bundle_id=$project.android.defaultConfig.applicationId&" +
+//                "api_token=$fir_api_token " +
+//                "http://api.bq04.com/apps").execute().text
+//
+//        //json解析对象拿到的是Map, 集合对应的是array, 按照这个规则取出我们需要的数据
+//        def appInfoBean = new groovy.json.JsonSlurper().parseText(appInfo)
+//        def key = appInfoBean["cert"]["binary"]["key"]
+//        def url = appInfoBean["cert"]["binary"]["upload_url"]
+//        def token = appInfoBean["cert"]["binary"]["token"]
+//
+//        //执行上传命令 注意apk路径不能包含中文、空格 测试包使用通用架构apk
+//        def apkFile = "./app/build/outputs/apk/alpha/qiniu_alpha.apk"
+//        //git提交记录
+//        String changeLog = (("git log --no-merges --pretty=format:%s<br>_____by__%cn<br><br>/// HEAD -10").execute().text)
+//                .replace(":", "：").replace("： ", "：").replace("\n", "")
+//        String[] split = changeLog.split("///")
+//        StringBuilder changeLogStrBuilder = new StringBuilder()
+//        int logCount = 0
+//        for (String log : split) {
+//            if (!log.startsWith("generator") && logCount <= 5) {
+//                //过滤generator提交 提取5条日志
+//                changeLogStrBuilder.append(log)
+//                logCount++
+//            }
+//        }
+//        //win10自带的curl中文会乱码 这里使用了官网下载的curl以解决中文乱码问题 https://curl.se/download.html
+//        def upload = (project.rootDir.absolutePath + "/publish/lib/curl -X POST --form file=@$apkFile" +
+//                " -F token=$token" +
+//                " -F key=$key" +
+//                " -F x:version=$project.android.defaultConfig.versionName" +
+//                //build拼接打包次数
+//                " -F x:build=${getVersionCode()}-${project.versionCofig.buildCount}-${getCurBranchCommitCount()}" +
+//                " -F \"x:changelog=" +
+//                changeLogStrBuilder.toString()
+//                        .replace(":", "：").replace("： ", "：")
+//                        .replace("feat", "新增")
+//                        .replace("fix", "修复")
+//                        .replace("style", "样式")
+//                        .replace("refactor", "重构")
+//                        .replace("xiage", "吴昌侠")
+//                        .replace("gaoxm", "高晓明")
+//                        .replace("wenjh", "温佳豪") + "\"" +
+//                " $url")
+//        println upload
+//        def uploadResult = upload.execute().text
+//        println uploadResult
+//        println "上传完成"
+//    }
+//}
+
+//walle渠道包生成
+task multiChannel {
+    doLast {
+        //清空旧文件
+        new File(rootDir.getAbsolutePath() + '\\publish\\outputs').deleteDir()
+
+        println "生成渠道包..."
+        ("java -jar publish/lib/walle-cli-all.jar batch -f " +
+                //渠道文件
+                "publish/channels.txt " +
+                //源apk（乐固加固后的包）
+                "publish/baseApk/qiniu.apk " +
+                //输出目录
+                "publish/outputs").execute().text
+        println "打包完成，输出目录：" + project.getRootDir() + "\\publish\\outputs"
+    }
+}
+
+//一条龙发包task 自动打release包->加固->对齐、签名->输出多渠道->归类商店包并打zip
+//先执行32 后执行64 可以同时点击开始 ide会自动在32执行结束后执行64
+ext.apkConfig = [
+        "apkName"    : "",
+        "channelFile": "",
+]
+apply from: rootProject.file('./publish/publish.gradle')
+//输出32位apk
+task publishRelease32 {
+    doFirst {
+        //清空已生成文件
+        new File("./publish/outputs").deleteDir()
+    }
+    doLast {
+        project.apkConfig.apkName = "qiniu_32"
+        //在publish目录下
+        project.apkConfig.channelFile = "channels.txt"
+    }
+    it.finalizedBy uploadMapping
+}
+//输出64位apk
+task publishRelease64 {
+    doFirst {
+        project.apkConfig.apkName = "qiniu_64"
+        //在publish目录下
+        project.apkConfig.channelFile = "channels_64.txt"
+    }
+    it.finalizedBy uploadMapping
+}
